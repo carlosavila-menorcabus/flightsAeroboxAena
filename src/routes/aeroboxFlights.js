@@ -3,6 +3,7 @@ import { compute12hWindow } from '../utils/timeWindow.js';
 import { normalizeFlightNumber } from '../utils/flightNumber.js';
 import { fetchAeroboxFlights } from '../aerobox/aeroboxClient.js';
 import { getFlightsFromDatabaseTimeWindow, insertFlightsData } from '../repositories/shuttleFlightsRepo.js';
+import { getLogoUrlOrFetch } from '../lib/airlineLogos.js';
 
 export function apiGuard(req, reply, done) {
   const ip = req.ip;
@@ -58,6 +59,35 @@ function parseAeroboxLocalToYmdTime(localStr) {
   return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}:00` };
 }
 
+async function attachLogoUrlsToFlights(flights) {
+  if (!Array.isArray(flights) || flights.length === 0) return flights;
+
+  const logoCache = new Map();
+
+  for (const f of flights) {
+    const iata = String(f?.iataCompania || '').trim().toUpperCase();
+    if (!iata || logoCache.has(iata)) continue;
+
+    try {
+      const url = await getLogoUrlOrFetch(iata);
+      logoCache.set(iata, url);
+    } catch {
+      logoCache.set(iata, '/airlines/_unknown.png');
+    }
+  }
+
+  return flights.map((f) => {
+    const iata = String(f?.iataCompania || '').trim().toUpperCase();
+    const logoUrl = iata ? (logoCache.get(iata) || '/airlines/_unknown.png') : '/airlines/_unknown.png';
+
+    return {
+      ...f,
+      logoUrl,
+      logo_url: logoUrl,
+    };
+  });
+}
+
 export async function registerAeroboxFlightsRoutes(app) {
   // Public API (Laravel)
   app.get('/api/flights', { preHandler: apiGuard }, async (req, reply) => {
@@ -94,7 +124,8 @@ export async function registerAeroboxFlightsRoutes(app) {
     });
 
     if (dbRows.length > 0) {
-      return { ok: true, source: 'db', count: dbRows.length, flights: dbRows };
+      const flightsWithLogos = await attachLogoUrlsToFlights(dbRows);
+      return { ok: true, source: 'db', count: flightsWithLogos.length, flights: flightsWithLogos };
     }
 
     // 2) Upstream Aerobox
@@ -171,6 +202,8 @@ export async function registerAeroboxFlightsRoutes(app) {
       limit: req.query?.limit ?? 10000
     });
 
-    return { ok: true, source: 'upstream', count: rows2.length, flights: rows2 };
+    const flightsWithLogos = await attachLogoUrlsToFlights(rows2);
+
+    return { ok: true, source: 'upstream', count: flightsWithLogos.length, flights: flightsWithLogos };
   });
 }
