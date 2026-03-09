@@ -105,4 +105,7 @@ if (config.ENABLE_SCHEDULER) {
 
 app.log.info({ mailEnabled: mailEnabled() }, 'Mail config');
 
-await app.listen({ host: config.HOST, port: config.PORT });
+const passengerPort = Number(process.env.PORT || config.PORT || 3015);
+const passengerHost = process.env.HOST || config.HOST || '0.0.0.0';
+
+await app.listen({ host: passengerHost, port: passengerPort });
