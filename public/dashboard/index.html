@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MenorcaBus · Flight Board</title>
+    <link rel="stylesheet" href="/dashboard/style.css" />
+  </head>
+  <body>
+    <div class="mbd-shell">
+      <header class="mbd-topbar">
+        <div class="mbd-topbar-left">
+          <img class="mbd-logo" src="/dashboard/logo12.png" alt="MenorcaBus" />
+        </div>
+
+        <div class="mbd-topbar-center">
+          <div class="mbd-board-kicker">MenorcaBus Flight Board</div>
+          <div class="mbd-board-mainline">
+            <span id="heroAirport">MAH</span>
+            <span class="mbd-sep">·</span>
+            <span id="heroType">Llegadas</span>
+          </div>
+          <div class="mbd-board-sub" id="subtitle">Cargando…</div>
+        </div>
+
+        <div class="mbd-topbar-right">
+          <div class="mbd-ws-pill" title="Estado de conexión">
+            <span class="mbd-ws-dot" id="wsDot"></span>
+            <span id="wsStatus">connecting...</span>
+          </div>
+
+          <div class="mbd-clock-box">
+            <div class="mbd-clock-label">Hora local</div>
+            <div class="mbd-clock" id="clock">--:--:--</div>
+          </div>
+        </div>
+      </header>
+
+      <section class="mbd-toolbar">
+        <div class="mbd-toolbar-left">
+          <label class="mbd-field">
+            <span class="mbd-label">Aeropuerto</span>
+            <select id="airportSel"></select>
+          </label>
+
+          <div class="mbd-field">
+            <span class="mbd-label">Tipo</span>
+            <div class="mbd-seg">
+              <button class="mbd-seg-btn active" id="btnArr" type="button">
+                <span class="mbd-ico">🛬</span>
+                Llegadas
+              </button>
+              <button class="mbd-seg-btn" id="btnDep" type="button">
+                <span class="mbd-ico">🛫</span>
+                Salidas
+              </button>
+            </div>
+          </div>
+
+          <label class="mbd-field mbd-field-grow">
+            <span class="mbd-label">Buscar</span>
+            <input id="q" type="search" placeholder="Vuelo, compañía, destino, estado…" />
+          </label>
+
+          <label class="mbd-field">
+            <span class="mbd-label">Estado</span>
+            <select id="statusSel">
+              <option value="">Todos los estados</option>
+            </select>
+          </label>
+
+          <label class="mbd-check-inline" for="hideClosed">
+            <input id="hideClosed" type="checkbox" checked />
+            <span>Ocultar vuelos cerrados</span>
+          </label>
+        </div>
+
+        <div class="mbd-toolbar-right">
+          <button class="mbd-refresh-btn" id="refreshBtn" type="button">
+            ⟳ Refrescar
+          </button>
+        </div>
+      </section>
+
+      <main class="mbd-layout">
+        <aside class="mbd-sidebar">
+          <section class="mbd-card">
+            <div class="mbd-card-title">Resumen</div>
+
+            <div class="mbd-stats">
+              <div class="mbd-stat">
+                <div class="mbd-stat-icon">✈️</div>
+                <div class="mbd-stat-copy">
+                  <div class="mbd-stat-label">Vuelos</div>
+                  <div class="mbd-stat-value" id="stTotal">0</div>
+                </div>
+              </div>
+
+              <div class="mbd-stat">
+                <div class="mbd-stat-icon">📡</div>
+                <div class="mbd-stat-copy">
+                  <div class="mbd-stat-label">Activos en pantalla</div>
+                  <div class="mbd-stat-value" id="stVisible">0</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mbd-meta">
+              <div><strong>Ventana</strong> <span id="stWindow">—</span></div>
+              <div><strong>Push</strong> <span id="stRefresh">—</span></div>
+            </div>
+
+            <div class="mbd-chip-cloud" id="chips"></div>
+          </section>
+        </aside>
+
+        <section class="mbd-board-card">
+          <div class="mbd-card-title">Pantalla</div>
+
+          <div class="mbd-table-wrap">
+            <table class="mbd-board">
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Vuelo</th>
+                  <th>Compañía</th>
+                  <th>Origen / Destino</th>
+                  <th>Estado</th>
+                  <th>Estimada</th>
+                </tr>
+              </thead>
+              <tbody id="tbody">
+                <tr>
+                  <td colspan="6" class="mbd-empty">Cargando…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <footer class="mbd-footer">
+        <div>MenorcaBus · dashboard operativo en raíz /</div>
+        <div id="lastUpdate">—</div>
+      </footer>
+    </div>
+
+    <script type="module" src="/dashboard/app.js"></script>
+  </body>
+</html>
