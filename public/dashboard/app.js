@@ -26,6 +26,7 @@ const clock = el('clock');
 let meta = null;
 let ws = null;
 let flights = [];
+let wsAvailable = true;
 
 const STATUS_MAP = {
   BOR: { key: 'cerrado', label: 'Puerta cerrada', closed: true },
@@ -92,10 +93,8 @@ function nowMinutes() {
 function computeAenaDiffMinutes(f) {
   const base = f?.horaProgramada;
   const aena = f?.aenaHoraEstimada || f?.aenaHoraProgramada;
-
   const a = parseMinutes(aena);
   const b = parseMinutes(base);
-
   if (a == null || b == null) return null;
   return a - b;
 }
@@ -334,6 +333,7 @@ async function refreshSnapshot() {
   } catch (err) {
     console.error(err);
     tbody.innerHTML = `<tr><td colspan="6" class="mbd-empty">Error cargando vuelos.</td></tr>`;
+    setWsState('offline');
   }
 }
 
@@ -350,16 +350,25 @@ function subscribe() {
 }
 
 function connectWs() {
-  if (ws) {
-    try { ws.close(); } catch {}
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${proto}//${location.host}/ws`;
+
+  setWsState('connecting...');
+
+  try {
+    ws = new WebSocket(url);
+  } catch (e) {
+    console.warn('WS init failed, fallback to polling', e);
+    wsAvailable = false;
+    setWsState('offline');
+    return;
   }
 
-  setWsState('connecting');
-
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  let opened = false;
 
   ws.addEventListener('open', () => {
+    opened = true;
+    wsAvailable = true;
     setWsState('online');
     subscribe();
   });
@@ -386,12 +395,18 @@ function connectWs() {
   });
 
   ws.addEventListener('close', () => {
-    setWsState('offline');
-    setTimeout(connectWs, 2500);
+    if (opened) {
+      setWsState('offline');
+    }
   });
 
   ws.addEventListener('error', () => {
+    if (!opened) {
+      console.warn('WS not available behind proxy/passenger, using polling only');
+      wsAvailable = false;
+    }
     setWsState('offline');
+    try { ws.close(); } catch {}
   });
 }
 
@@ -442,7 +457,11 @@ refreshBtn.addEventListener('click', refreshSnapshot);
   connectWs();
 
   setInterval(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    refreshSnapshot();
+  }, Number(meta?.defaults?.pushMs || 5000));
+
+  setInterval(() => {
+    if (wsAvailable && ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ action: 'ping' }));
     }
   }, 15000);
