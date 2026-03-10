@@ -34,6 +34,9 @@ await app.register(helmet);
 await app.register(formbody);
 await app.register(sensible);
 await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
+await app.register(helmet, {
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+});
 
 // WebSocket (dashboard)
 await app.register(websocket);
