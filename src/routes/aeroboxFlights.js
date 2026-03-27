@@ -59,6 +59,45 @@ function parseAeroboxLocalToYmdTime(localStr) {
   return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}:00` };
 }
 
+function parseAeroboxLocalToSpainYmdTime(localStr) {
+  // Ejemplo Aerobox: "2026-03-05 07:50+01:00"
+  if (!localStr) return { date: null, time: null };
+
+  const iso = String(localStr).trim().replace(' ', 'T');
+  const d = new Date(iso);
+
+  if (Number.isNaN(d.getTime())) {
+    return { date: null, time: null };
+  }
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Madrid',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(d);
+
+  const get = (type) => parts.find((p) => p.type === type)?.value ?? null;
+
+  const yyyy = get('year');
+  const mm = get('month');
+  const dd = get('day');
+  const hh = get('hour');
+  const mi = get('minute');
+
+  if (!yyyy || !mm || !dd || !hh || !mi) {
+    return { date: null, time: null };
+  }
+
+  return {
+    date: `${yyyy}-${mm}-${dd}`,
+    time: `${hh}:${mi}:00`
+  };
+}
+
 async function attachLogoUrlsToFlights(flights) {
   if (!Array.isArray(flights) || flights.length === 0) return flights;
 
@@ -161,8 +200,8 @@ export async function registerAeroboxFlightsRoutes(app) {
           ? f?.arrival?.revisedTime?.local
           : f?.departure?.revisedTime?.local;
 
-        const s = parseAeroboxLocalToYmdTime(scheduledLocal);
-        const r = parseAeroboxLocalToYmdTime(revisedLocal);
+        const s = parseAeroboxLocalToSpainYmdTime(scheduledLocal);
+        const r = parseAeroboxLocalToSpainYmdTime(revisedLocal);
 
         const n = normalizeFlightNumber({
           iataCompania: airline?.iata ?? null,
