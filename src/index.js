@@ -48,6 +48,12 @@ await app.register(statik, {
   decorateReply: true
 });
 
+// Internal tool, keep out of search results
+app.addHook('onSend', async (request, reply, payload) => {
+  reply.header('X-Robots-Tag', 'noindex');
+  return payload;
+});
+
 // Routes
 await registerAeroboxFlightsRoutes(app);
 await registerAirlinesRoutes(app);
