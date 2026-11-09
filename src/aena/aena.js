@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config } from '../config.js';
+import { normalizeFlightNumber } from '../utils/flightNumber.js';
 
 const execFileAsync = promisify(execFile);
 const CURL_BIN = process.platform === 'win32' ? 'curl.exe' : 'curl';
@@ -159,16 +160,20 @@ export function todayYmdLocal() {
 }
 
 export function mapAenaItemToDb(item, flightType) {
-  function normalizeFlightNumber(v) {
-    const s = String(v ?? '').trim();
-    if (!s) return null;
-    const digits = s.replace(/\D/g, '');
-    return digits || s;
-  }
+  // Mismo formato de compania/numVuelo/iataCompania que el flujo Aerobox
+  // (utils/flightNumber.js), para que el ON DUPLICATE KEY UPDATE de
+  // upsertFlightsFromAenaBatch encuentre la fila existente y la actualice
+  // en vez de crear un vuelo duplicado con el mismo numero (auditoria web,
+  // punto 43).
+  const n = normalizeFlightNumber({
+    iataCompania: item?.iataCompania ?? null,
+    compania: item?.compania ?? null,
+    numVuelo: item?.numVuelo ?? null
+  });
 
   return {
-    compania: item?.iataCompania ?? item?.compania ?? null,
-    numVuelo: normalizeFlightNumber(item?.numVuelo),
+    compania: n.compania,
+    numVuelo: n.numVuelo,
     fecha: parseDmyToYmd(item?.fecha) ?? item?.fecha ?? null,
     horaProgramada: item?.horaProgramada ?? null,
     fechaEstimada: parseDmyToYmd(item?.fechaEstimada) ?? item?.fechaEstimada ?? null,
@@ -176,7 +181,7 @@ export function mapAenaItemToDb(item, flightType) {
     iataAena: item?.iataAena ?? null,
     iataOtro: item?.iataOtro ?? null,
     codigosCompania: item?.codigosCompania ?? null,
-    iataCompania: item?.iataCompania ?? null,
+    iataCompania: n.iataCompania,
     tipoVuelo: flightType,
     estado: item?.estado ?? null,
     nombreCompania: item?.nombreCompania ?? null
